@@ -35,7 +35,7 @@ export default function Home() {
 
   return (
     <div style={{maxWidth:800, margin:'0 auto', padding:40}}>
-      <h1 style={{fontSize:48, fontWeight:900, margin:0}}>Post Threader</h1>
+      <h1 style={{fontSize:48, fontWeight:900, margin:0}}>Post Threader• By Brite Toolz</h1>
       <p style={{opacity:0.7}}>Schedule your Threads posts. Free for 5 posts, then $9/mo.</p>
       
       {!user ? (
@@ -56,7 +56,7 @@ export default function Home() {
           {posts.map(p=><div key={p.id} style={{background:'#111', padding:16, borderRadius:12, marginTop:8, border:'1px solid #222'}}>{p.content} <br/><small style={{opacity:0.5}}>{new Date(p.scheduled_at).toLocaleString()} - {p.status}</small></div>)}
         </div>
       )}
-      <div style={{marginTop:80, opacity:0.3, fontSize:12}}>Built in Onitsha • postthreader.vercel.app • v1.0</div>
+      <div style={{marginTop:80, opacity:0.3, fontSize:12}}>Built for everyone• postthreader.vercel.app • v1.0</div>
     </div>
   )
 }
