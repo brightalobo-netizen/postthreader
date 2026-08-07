@@ -1,3 +1,4 @@
+"use client"
 export default function Home(){
   const goLogin = () => window.location.href = '/api/auth/threads'
   return (
