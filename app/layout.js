@@ -1,8 +1,23 @@
-export const metadata = { title: 'Post Threader', description: 'Schedule Threads posts' }
+import "./globals.css"
+
+export const metadata = { 
+  title: 'PostThreader', 
+  description: 'Schedule Threads like you mean it' 
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{margin:0, fontFamily:'system-ui', background:'#000', color:'#fff'}}>{children}</body>
+      <body className="antialiased relative min-h-screen selection:bg-blue-500 selection:text-white">
+        {/* Background Ambient Glows */}
+        <div className="glow-top-left" />
+        <div className="glow-bottom-right" />
+        
+        {/* Main Page Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
+      </body>
     </html>
   )
 }
