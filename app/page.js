@@ -1,44 +1,136 @@
-"use client"
-export default function Home(){
-  const goLogin = () => window.location.href = '/api/auth/threads'
+'use client';
+
+import { useState } from 'react';
+
+export default function Home() {
+  const [activeTab, setActiveTab] = useState('Drafts');
+
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* dot grid */}
-      <div className="absolute inset-0 bg-[radial-gradient(#222_1px,transparent_1px)] [background-size:20px_20px] opacity-50" />
-      <div className="absolute top-[-100px] right-[-100px] w- h- bg-blue-500/30 rounded-full blur-" />
+    <main className="min-h-screen max-w-5xl mx-auto px-4 pt-6 pb-20 flex flex-col items-center">
+      
+      {/* --- Top Navigation --- */}
+      <header className="w-full max-w-4xl flex items-center justify-between py-3 px-6 rounded-full glass-card mb-12 md:mb-16">
+        <div className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12.1 3C7.02 3 3 7.02 3 12.1c0 5.08 4.02 9.1 9.1 9.1 5.08 0 9.1-4.02 9.1-9.1 0-5.08-4.02-9.1-9.1-9.1zm0 16.2c-3.92 0-7.1-3.18-7.1-7.1 0-3.92 3.18-7.1 7.1-7.1 3.92 0 7.1 3.18 7.1 7.1 0 3.92-3.18 7.1-7.1 7.1z"/>
+          </svg>
+          <span>PostThreader</span>
+        </div>
+        <button className="px-5 py-1.5 text-sm font-medium rounded-full border border-white/20 bg-white/5 hover:bg-white/10 transition">
+          Login
+        </button>
+      </header>
 
-      <nav className="relative z-10 flex justify-between items-center px-6 md:px-12 py-6">
-        <div className="flex items-center gap-2 font-bold text-xl">🔗 PostThreader</div>
-        <button onClick={goLogin} className="px-5 py-2 rounded-full border border-white/20 hover:bg-white hover:text-black transition">Login</button>
-      </nav>
+      {/* --- Hero Section --- */}
+      <section className="text-center max-w-2xl mx-auto mb-12">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-4">
+          Schedule Threads <br /> like you mean it
+        </h1>
+        <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-8 max-w-lg mx-auto">
+          Plan, draft, and auto-post your X/Twitter threads on autopilot. Built for creators, founders, and marketers.
+        </p>
+        <button className="bg-white text-black font-semibold text-sm md:text-base px-6 py-3 rounded-xl hover:bg-gray-200 transition shadow-lg shadow-white/10">
+          Start Scheduling — Free in Beta
+        </button>
+      </section>
 
-      <main className="relative z-10 px-6 md:px-12 pt-12 md:pt-20 max-w-6xl mx-auto text-center">
-        <h1 className="text-4xl md:text-7xl font-bold leading-tight">Schedule Threads like<br/>you mean it</h1>
-        <p className="mt-4 text-white/60 max-w-2xl mx-auto">Plan, write, and automate your Threads posts. Stay consistent without the busywork. Schedule across days, preview your thread, and post automatically — all from one place.</p>
-        <button onClick={goLogin} className="mt-8 px-8 py-4 bg-white text-black rounded-full font-semibold text-lg hover:scale-105 transition">Start Scheduling - Free in Beta</button>
-
-        {/* glass card */}
-        <div className="mt-12 mx-auto max-w-2xl p-4 rounded- bg-white/10 backdrop-blur-xl border border-white/10 text-left">
-          <div className="flex justify-between text-sm text-white/60"><span>📅 Scheduler</span><span className="px-2 py-1 rounded-full bg-blue-500/20">Draft • Scheduled</span></div>
-          <div className="mt-4 p-3 rounded-xl bg-white/5">1/ Launching PostThreader 🚀<br/>2/ Queue threads days in advance<br/>3/ Join now — free in beta.</div>
-          <div className="mt-3 text-sm text-white/50">Scheduled for • Tomorrow at 9:00 AM</div>
+      {/* --- Scheduler Preview Component (Glass Card) --- */}
+      <section className="w-full max-w-3xl glass-card rounded-3xl p-4 md:p-6 shadow-2xl relative overflow-hidden">
+        
+        {/* Header Tabs */}
+        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 mb-6 gap-3">
+          <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-300">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            <span>Scheduler Preview</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-lg border border-white/10 text-xs">
+            {['Drafts', 'Scheduled', 'Published'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1 rounded-md transition ${
+                  activeTab === tab 
+                    ? 'bg-blue-600 text-white font-medium' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <h2 className="mt-20 text-2xl font-semibold">How it works</h2>
-        <div className="mt-6 grid md:grid-cols-3 gap-4 text-left">
-          {[
-            ["Connect Threads","Connect your Threads account in seconds. Secure OAuth, no passwords stored."],
-            ["Write","Draft your thread. Add multiple posts, preview, and schedule."],
-            ["Auto-posts","We publish automatically on your schedule. Focus on writing."]
-          ].map(([t,d])=>(
-            <div key={t} className="p-6 rounded-2xl bg-white/5 border border-white/10">
-              <h3 className="font-semibold">{t}</h3><p className="mt-2 text-sm text-white/60">{d}</p>
-              <button onClick={goLogin} className="mt-4 text-sm underline">Connect →</button>
+        {/* Content Layout (Desktop Grid & Mobile Stack) */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          
+          {/* Draft Items List */}
+          <div className="md:col-span-3 space-y-3">
+            <p className="text-xs text-gray-400 font-medium mb-2">Draft Threads</p>
+            
+            {/* Item 1 */}
+            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-left">
+              <div className="flex items-center gap-2 text-xs font-semibold text-blue-300 mb-1">
+                <span>🔗 Draft 1 • Launch announcement for v2.0</span>
+              </div>
+              <p className="text-xs text-gray-300">
+                Post: We're excited to announce PostThreader v2.0 is live tomorrow. Here's what's new → 1/5
+              </p>
             </div>
-          ))}
+
+            {/* Item 2 */}
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-left">
+              <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 mb-1">
+                <span>🔗 Draft 2 • Tips for building in public</span>
+              </div>
+              <p className="text-xs text-gray-400">
+                Post: 5 lessons I learned building in public for 6 months. A thread → 1/7
+              </p>
+            </div>
+
+            {/* Item 3 */}
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-left">
+              <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 mb-1">
+                <span>🔗 Draft 3 • Weekly recap & metrics</span>
+              </div>
+              <p className="text-xs text-gray-400">
+                Post: Weekly recap: 12 new signups, 3.2k impressions, top tweet → 1/4
+              </p>
+            </div>
+          </div>
+
+          {/* Schedule Settings Panel */}
+          <div className="md:col-span-2 bg-black/60 border border-white/10 rounded-2xl p-4 flex flex-col justify-between text-left">
+            <div>
+              <h3 className="text-xs font-semibold text-gray-200 mb-4">Schedule</h3>
+              
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-gray-400 block mb-1">Publish Date</span>
+                  <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-200">
+                    Oct 15, 2026 • 9:30 AM UTC
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-gray-400 block mb-1">Timezone</span>
+                  <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-200">
+                    UTC-07:00 Pacific Time
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-gray-400">
+              <span className="flex items-center gap-1.5 text-blue-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                Auto-publish enabled
+              </span>
+            </div>
+          </div>
+
         </div>
-      </main>
-      <footer className="relative z-10 mt-20 py-8 text-center text-white/30 text-sm">© 2024 PostThreader • Privacy • Terms</footer>
-    </div>
-  )
+
+      </section>
+    </main>
+  );
 }
