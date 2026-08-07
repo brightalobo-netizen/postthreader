@@ -5,6 +5,11 @@ import { useState } from 'react';
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Drafts');
 
+  const handleLogin = () => {
+    // Redirect to your Threads/Twitter auth endpoint
+    window.location.href = '/api/auth/threads';
+  };
+
   return (
     <div className="container">
       
@@ -16,14 +21,18 @@ export default function Home() {
           </svg>
           <span>PostThreader</span>
         </div>
-        <button className="btn-login">Login</button>
+        <button className="btn-login" onClick={handleLogin}>
+          Login
+        </button>
       </header>
 
       {/* Hero Section */}
       <section className="hero">
         <h1>Schedule Threads <br /> like you mean it</h1>
         <p>Plan, draft, and auto-post your X/Twitter threads on autopilot. Built for creators, founders, and marketers.</p>
-        <button className="btn-primary">Start Scheduling — Free in Beta</button>
+        <button className="btn-primary" onClick={handleLogin}>
+          Start Scheduling — Free in Beta
+        </button>
       </section>
 
       {/* Preview Section */}
