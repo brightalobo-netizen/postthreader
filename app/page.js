@@ -11,7 +11,13 @@ export default function Home() {
       {/* --- Top Navigation --- */}
       <header className="w-full max-w-4xl flex items-center justify-between py-3 px-6 rounded-full glass-card mb-12 md:mb-16">
         <div className="flex items-center gap-2 font-bold text-lg tracking-tight">
-          <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+          {/* Logo Icon with strict inline sizing to prevent full-screen scaling */}
+          <svg 
+            style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px' }} 
+            className="text-blue-500" 
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+          >
             <path d="M12.1 3C7.02 3 3 7.02 3 12.1c0 5.08 4.02 9.1 9.1 9.1 5.08 0 9.1-4.02 9.1-9.1 0-5.08-4.02-9.1-9.1-9.1zm0 16.2c-3.92 0-7.1-3.18-7.1-7.1 0-3.92 3.18-7.1 7.1-7.1 3.92 0 7.1 3.18 7.1 7.1 0 3.92-3.18 7.1-7.1 7.1z"/>
           </svg>
           <span>PostThreader</span>
