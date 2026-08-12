@@ -102,19 +102,21 @@ export default function DashboardPage() {
         <div className="absolute top-[20%] -right-[20%] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.15),transparent_60%)] blur-[70px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[680px] px-4 py-6 sm:py-10">
-        
-        {/* Navigation Header */}
-        <header className="flex items-center justify-between mb-8 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-3.5 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center gap-3">
-            <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-white/20 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              <Image src="/logo.png" alt="PostThreader Logo" fill className="object-cover" />
-            </div>
-            <div>
-              <h1 className="font-bold text-[15px] tracking-tight leading-none text-white">PostThreader</h1>
-              <p className="text-[11px] text-white/40 font-medium mt-1">@5thpope</p>
-            </div>
-          </div>
+      <div className="flex items-center gap-3">
+  <div className="relative h-9 w-9 min-w-[36px] overflow-hidden rounded-xl border border-white/20 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+    <Image 
+      src="/logo.png" 
+      alt="PostThreader Logo" 
+      width={36} 
+      height={36} 
+      className="object-cover h-full w-full" 
+    />
+  </div>
+  <div>
+    <h1 className="font-bold text-[15px] tracking-tight leading-none text-white">PostThreader</h1>
+    <p className="text-[11px] text-white/40 font-medium mt-1">@5thpope</p>
+  </div>
+</div>
 
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-400">
