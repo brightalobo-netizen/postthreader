@@ -52,7 +52,8 @@ export default function LandingPage() {
   const [tab, setTab] = useState("Drafts")
   const current = TABS[tab]
 
-  const handleLogin = () => {
+  const handleLogin = (e) => {
+    e.preventDefault()
     window.location.href = '/api/auth/threads'
   }
 
