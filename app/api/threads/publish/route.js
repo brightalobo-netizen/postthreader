@@ -1,4 +1,9 @@
 ﻿import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req) {
   try {
@@ -13,7 +18,36 @@ export async function POST(req) {
       return NextResponse.json({ error: 'text and token are required' }, { status: 400 });
     }
 
-    // Step 1: Create Threads Media Container
+    const targetDate = scheduled_at ? new Date(scheduled_at) : new Date();
+    const isFuture = targetDate > new Date();
+
+    // If scheduled for the future, save to Supabase queue
+    if (isFuture) {
+      const { error } = await supabase
+        .from('scheduled_threads')
+        .insert([
+          {
+            user_id: userId,
+            token: accessToken,
+            post_content: postContent,
+            scheduled_at: targetDate.toISOString(),
+            status: 'pending'
+          }
+        ]);
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        return NextResponse.json({ error: 'Failed to save scheduled post to database.' }, { status: 500 });
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        scheduled: true,
+        message: `Thread successfully scheduled for ${targetDate.toLocaleString()}`
+      });
+    }
+
+    // Otherwise, publish immediately to Meta Threads API (Step 1 & Step 2)
     const containerRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -25,33 +59,22 @@ export async function POST(req) {
     });
 
     const containerData = await containerRes.json();
-
     if (!containerRes.ok || !containerData.id) {
-      console.error('Container creation failed:', containerData);
-      return NextResponse.json({ 
-        error: containerData.error?.message || 'Failed to create Threads container. Check your token permissions.' 
-      }, { status: 400 });
+      return NextResponse.json({ error: containerData.error?.message || 'Failed to create Threads container.' }, { status: 400 });
     }
 
-    const creationId = containerData.id;
-
-    // Step 2: Publish the Container
     const publishRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        creation_id: creationId,
+        creation_id: containerData.id,
         access_token: accessToken,
       }),
     });
 
     const publishData = await publishRes.json();
-
     if (!publishRes.ok || !publishData.id) {
-      console.error('Publishing failed:', publishData);
-      return NextResponse.json({ 
-        error: publishData.error?.message || 'Failed to publish Threads post.' 
-      }, { status: 400 });
+      return NextResponse.json({ error: publishData.error?.message || 'Failed to publish Threads post.' }, { status: 400 });
     }
 
     return NextResponse.json({ 
@@ -62,6 +85,6 @@ export async function POST(req) {
 
   } catch (err) {
     console.error('Publish error:', err);
-    return NextResponse.json({ error: 'Internal server error while publishing' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error while processing post' }, { status: 500 });
   }
 }
