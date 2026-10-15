@@ -1,224 +1,365 @@
-"use client"
-import { useState } from "react"
-import Link from "next/link"
+'use client';
 
-const TABS = {
-  Drafts: {
-    heading: "Draft threads",
-    items: [
-      { t: "Draft 1 · Launch announcement for v2.0", d: "We're excited to announce PostThreader v2.0 is live tomorrow. Here's what's new → 1/5" },
-      { t: "Draft 2 · Tips for building in public", d: "5 lessons I learned building in public for 6 months. A thread → 1/7" },
-      { t: "Draft 3 · Weekly recap & metrics", d: "Weekly recap: 12 new signups, 3.2k impressions, top thread → 1/4" },
-    ],
-  },
-  Scheduled: {
-    heading: "Scheduled threads",
-    items: [
-      { t: "Launch announcement for v2.0", d: "Oct 15 · 9:30 AM · 5 posts · Queued" },
-      { t: "Tips for building in public", d: "Oct 16 · 11:00 AM · 7 posts · Queued" },
-      { t: "Weekly recap & metrics", d: "Oct 18 · 8:00 AM · 4 posts · Queued" },
-    ],
-  },
-  Published: {
-    heading: "Published threads",
-    items: [
-      { t: "How we grew to 10K users", d: "Oct 8 · 6 posts · 12.4K impressions" },
-      { t: "Founder habits that stuck", d: "Oct 3 · 5 posts · 8.1K impressions" },
-      { t: "What I'd do differently", d: "Sep 27 · 7 posts · 5.9K impressions" },
-    ],
-  },
-}
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { 
+  Calendar, 
+  Clock, 
+  Zap, 
+  Send, 
+  LayoutDashboard, 
+  CalendarDays, 
+  BarChart2,
+  CheckCircle2,
+  AlertCircle,
+  LogIn
+} from 'lucide-react';
 
-const PHONE_ITEMS = [
-  { t: "Launch announcement for v2.0 is scheduled", n: 5 },
-  { t: "Tips for building in public", n: 7 },
-  { t: "Weekly recap & metrics", n: 4 },
-]
+export default function DashboardPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [token, setToken] = useState('');
+  const [text, setText] = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [presetLabel, setPresetLabel] = useState(null);
+  const [statusMessage, setStatusMessage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-const LinkIcon = ({ className = "w-5 h-5" }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-    <path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1" />
-    <path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1" />
-  </svg>
-)
+  useEffect(() => {
+    setMounted(true);
 
-const Check = ({ className = "w-3 h-3" }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-    <path d="M5 12.5l4.5 4.5L19 7" />
-  </svg>
-)
+    // 1. Check URL for incoming token or auth code from OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token') || params.get('access_token');
+    if (urlToken) {
+      localStorage.setItem('threads_token', urlToken);
+      setToken(urlToken);
+      setIsAuthenticated(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
 
-export default function LandingPage() {
-  const [tab, setTab] = useState("Drafts")
-  const current = TABS[tab]
+    // 2. Check localStorage for existing tokens
+    const storedToken = localStorage.getItem('threads_token') || localStorage.getItem('pt_token');
+    if (storedToken) {
+      setToken(storedToken);
+      setIsAuthenticated(true);
+    }
+  }, []);
 
-  return (
-    <div className="min-h-screen bg-[#0a1029] text-white relative overflow-hidden">
-      {/* background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1e3aff] via-[#0a2ad6] to-[#081a8a]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_40%,rgba(80,140,255,0.6),transparent_40%),radial-gradient(circle_at_85%_20%,rgba(30,100,255,0.5),transparent_50%)]" />
-      {/* soft bokeh */}
-      <div className="absolute top-40 left-[6%] w-8 h-8 rounded-full bg-cyan-300/50 blur-md" />
-      <div className="absolute top-24 right-[8%] w-14 h-14 rounded-full bg-blue-200/30 blur-lg" />
-      <div className="absolute bottom-24 left-[30%] w-24 h-24 rounded-full bg-blue-300/20 blur-2xl" />
+  // Quick Preset Selector
+  const handlePreset = (label) => {
+    setPresetLabel(label);
+    const now = new Date();
+    if (label === 'Tomorrow 9AM') {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+      setScheduledAt(tomorrow.toISOString().slice(0, 16));
+    } else if (label === 'Today 6PM') {
+      const today = new Date(now);
+      today.setHours(18, 0, 0, 0);
+      setScheduledAt(today.toISOString().slice(0, 16));
+    }
+  };
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-6">
-        {/* NAV */}
-        <nav className="flex justify-between items-center bg-[#0b0d17] rounded-2xl px-6 py-4 border border-white/10 shadow-xl">
-          <Link href="/" className="flex items-center gap-2.5 text-2xl tracking-tight">
-            <LinkIcon className="w-7 h-7 text-blue-400" />
-            <span className="font-light">Post<span className="font-medium">Threader</span></span>
-          </Link>
-          <Link
-            href="/dashboard"
-            className="px-5 py-2 rounded-full border border-white/30 text-sm font-medium hover:bg-white hover:text-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-          >
-            Login
-          </Link>
-        </nav>
+  const handlePublishOrSchedule = async (forceImmediate = false) => {
+    if (!text.trim()) {
+      setStatusMessage({ type: 'error', text: 'Please type your post content first.' });
+      return;
+    }
 
-        {/* HERO */}
-        <header className="text-center mt-14 md:mt-20">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight">
-            Schedule Threads like you mean it
-          </h1>
-          <p className="mt-4 text-lg md:text-xl text-white/70 max-w-2xl mx-auto">
-            Plan, draft, and auto-post your Threads on autopilot.
-            <br className="hidden sm:block" />
-            Built for creators, founders, and marketers.
+    const targetSchedule = forceImmediate ? null : scheduledAt;
+
+    if (!forceImmediate && !targetSchedule) {
+      setStatusMessage({ type: 'error', text: 'Please select a date and time to schedule, or click Publish above.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusMessage(null);
+
+    try {
+      const res = await fetch('/api/threads/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          token,
+          scheduledAt: targetSchedule,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.id || data.success) {
+        const isScheduled = Boolean(targetSchedule);
+        setStatusMessage({
+          type: 'success',
+          text: isScheduled
+            ? `Thread scheduled for ${new Date(targetSchedule).toLocaleString()}!`
+            : 'Your thread is live on Threads!',
+        });
+        setText('');
+        setScheduledAt('');
+        setPresetLabel(null);
+      } else {
+        setStatusMessage({
+          type: 'error',
+          text: data.error || 'Unable to post to Threads. Please verify your connection.',
+        });
+      }
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    window.location.href = '/api/auth/threads';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('threads_token');
+    localStorage.removeItem('pt_token');
+    setIsAuthenticated(false);
+    setToken('');
+  };
+
+  if (!mounted) return null;
+
+  // --- UNAUTHENTICATED VIEW (Login Screen) ---
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#070708] text-white antialiased flex items-center justify-center p-4 selection:bg-purple-500/30">
+        <div className="absolute pointer-events-none inset-0">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15),transparent_70%)] blur-[80px]" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-md rounded-[28px] border border-white/10 bg-white/[0.03] backdrop-blur-2xl p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] text-center">
+          <div className="mx-auto mb-6 h-14 w-14 overflow-hidden rounded-2xl border border-white/20 shadow-[0_0_25px_rgba(59,130,246,0.5)] flex items-center justify-center bg-purple-600/20 text-purple-300 font-extrabold text-lg">
+            PT
+          </div>
+
+          <h1 className="text-2xl font-extrabold tracking-tight text-white mb-2">Welcome to PostThreader</h1>
+          <p className="text-sm text-white/50 mb-8 leading-relaxed">
+            Connect your Threads account to start publishing, scheduling, and managing your threads effortlessly.
           </p>
-          <Link
-            href="/dashboard"
-            className="inline-block mt-8 px-8 py-3.5 rounded-xl bg-white text-black font-bold shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:bg-white/90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+
+          <button
+            onClick={handleLoginRedirect}
+            className="w-full h-12 rounded-2xl bg-white text-black font-semibold text-sm shadow-[0_0_25px_rgba(255,255,255,0.3)] hover:shadow-[0_0_35px_rgba(255,255,255,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
           >
-            Start Scheduling - Free in Beta
-          </Link>
-        </header>
+            <LogIn className="h-4 w-4" />
+            <span>Connect with Threads</span>
+          </button>
 
-        {/* PREVIEW + PHONE */}
-        <div className="relative mt-12 md:mt-16 lg:pr-56 pb-4">
-          {/* glass frame */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-4 shadow-2xl">
-            <div className="bg-[#e8eeff]/95 rounded-2xl p-4 md:p-5 text-slate-900">
-              <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="w-2 h-2 bg-blue-600 rounded-full" />
-                  Scheduler preview
-                </div>
-                <div role="tablist" className="flex gap-2">
-                  {Object.keys(TABS).map((name) => (
-                    <button
-                      key={name}
-                      role="tab"
-                      aria-selected={tab === name}
-                      onClick={() => setTab(name)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 ${
-                        tab === name ? "bg-blue-600 text-white shadow" : "bg-slate-500/20 text-slate-700 hover:bg-slate-500/30"
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <p className="text-[11px] text-white/30 mt-6">
+            Requires authorized Meta Threads developer permissions.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-8">
-                  <p className="text-sm text-slate-500 mb-2">{current.heading}</p>
-                  <ul className="space-y-2.5">
-                    {current.items.map((it) => (
-                      <li key={it.t} className="flex gap-3 p-3 rounded-xl bg-white/70 border border-white">
-                        <LinkIcon className="w-4 h-4 mt-0.5 text-blue-600 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold">{it.t}</p>
-                          <p className="text-xs text-slate-600 mt-0.5">{it.d}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+  // --- AUTHENTICATED VIEW (Main Dashboard) ---
+  return (
+    <div className="min-h-screen bg-[#070708] text-white antialiased relative overflow-hidden pb-24 font-sans selection:bg-purple-500/30">
+      
+      {/* Soft Ambient Background Glows */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.12),transparent_70%)]" />
+        <div className="absolute top-[20%] -right-[20%] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.15),transparent_60%)] blur-[70px]" />
+      </div>
 
-                <div className="md:col-span-4 bg-slate-900/90 text-white rounded-xl p-4">
-                  <p className="text-base font-bold mb-3">Schedule</p>
-                  <div className="space-y-2.5 text-xs">
-                    <div className="p-2.5 rounded-lg bg-white/10">
-                      <p className="text-white/60">Publish date</p>
-                      <p className="mt-1 text-sm">Oct 15, 2024 · 9:30 AM UTC</p>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-white/10">
-                      <p className="text-white/60">Timezone</p>
-                      <p className="mt-1 text-sm">UTC-07:00 Pacific Time</p>
-                    </div>
-                    <p className="flex items-center gap-2 text-blue-300 pt-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Auto-publish enabled
-                    </p>
-                    <p className="text-white/60">Will post as a 5-part thread on Threads</p>
-                  </div>
-                </div>
-              </div>
+      <div className="relative z-10 mx-auto max-w-[680px] px-4 py-6 sm:py-10">
+        
+        {/* Navigation Header */}
+        <header className="flex items-center justify-between mb-8 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-3.5 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 min-w-[36px] overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-600/30 to-indigo-600/30 shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center justify-center text-purple-300 font-bold text-xs">
+              5P
+            </div>
+            <div>
+              <h1 className="font-bold text-[15px] tracking-tight leading-none text-white">PostThreader</h1>
+              <p className="text-[11px] text-white/40 font-medium mt-1">@5thpope</p>
             </div>
           </div>
 
-          {/* phone */}
-          <div className="relative mt-10 flex justify-center lg:mt-0 lg:absolute lg:right-0 lg:-top-24 lg:w-[290px]">
-            <div className="absolute -z-10 w-56 h-56 rounded-full bg-blue-300/30 blur-3xl top-10" />
-
-            {/* floating calendar chip */}
-            <div className="absolute -top-8 -right-2 sm:right-6 lg:-right-10 z-20 w-20 h-20 bg-blue-500/30 backdrop-blur border border-blue-200/40 rounded-2xl grid place-items-center shadow-[0_0_24px_rgba(59,130,246,0.6)]">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" className="w-10 h-10" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18M8 14h2M12 14h2M8 17.5h2" />
-              </svg>
-              <span className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-green-400 text-white grid place-items-center">
-                <Check />
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              Connected
             </div>
+            <button
+              onClick={handleLogout}
+              className="text-[11px] font-medium text-white/50 hover:text-white transition-colors bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg"
+            >
+              Disconnect
+            </button>
+          </div>
+        </header>
 
-            <div className="relative w-[270px] bg-black rounded-[2.5rem] border-[6px] border-[#16181f] shadow-[0_0_60px_rgba(100,150,255,0.45)] overflow-hidden">
-              <div className="bg-[#101010] text-white px-3.5 pt-3 pb-4">
-                <div className="flex justify-between items-center text-xs font-semibold px-1">
-                  <span>9:41</span>
-                  <span className="w-16 h-5 rounded-full bg-black border border-white/10" />
-                  <span className="w-6" />
-                </div>
-                <p className="text-center text-sm font-semibold mt-3">Threads</p>
-                <p className="text-base font-bold mt-3 mb-2">Scheduled</p>
+        {/* Welcome Section */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-extrabold tracking-tight text-white">Dashboard</h2>
+          <p className="text-sm text-white/50 mt-0.5">Welcome back, 5thpope — ready to post?</p>
+        </div>
 
-                <div className="bg-white/5 rounded-xl p-3 mb-2.5">
-                  <span className="inline-block bg-blue-600 text-white text-[11px] font-medium px-2 py-0.5 rounded">3 Scheduled</span>
-                  <p className="flex items-center gap-1.5 text-[11px] text-blue-300 mt-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-blue-500 grid place-items-center"><Check className="w-2 h-2" /></span>
-                    All queued & ready to post
-                  </p>
-                </div>
+        {/* In-App Status Message Banner */}
+        {statusMessage && (
+          <div className={`mb-5 flex items-center gap-2.5 rounded-xl p-3.5 text-xs font-medium border backdrop-blur-md transition-all ${
+            statusMessage.type === 'success'
+              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+              : 'bg-red-500/10 text-red-300 border-red-500/30'
+          }`}>
+            {statusMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" /> : <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />}
+            <span>{statusMessage.text}</span>
+          </div>
+        )}
 
-                <ul className="space-y-2.5">
-                  {PHONE_ITEMS.map((p) => (
-                    <li key={p.t} className="bg-white/5 rounded-xl p-3 flex gap-2.5">
-                      <span className="w-8 h-8 rounded-full bg-white/10 grid place-items-center shrink-0 text-sm font-bold">@</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-semibold">PostThreader <span className="text-blue-400">●</span></p>
-                        <p className="text-xs leading-snug mt-0.5">{p.t}</p>
-                        <p className="text-[10px] text-white/50 mt-1">Scheduled for Oct 15, 9:30 AM UTC · {p.n} posts</p>
-                      </div>
-                      <span className="w-5 h-5 rounded-full bg-green-500 grid place-items-center self-end shrink-0"><Check className="w-3 h-3" /></span>
-                    </li>
-                  ))}
-                </ul>
+        {/* Main Composer Glass Card with Instant Publish Button */}
+        <section className="relative rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-5 sm:p-6 mb-6">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="What's on your mind?"
+            className="w-full min-h-[120px] resize-none bg-transparent text-[15px] leading-relaxed text-white/90 placeholder:text-white/30 focus:outline-none"
+          />
 
-                <div className="flex justify-around items-center mt-4 pt-3 border-t border-white/10 text-white/60">
-                  <span className="w-5 h-5 rounded bg-white/80" />
-                  <span className="w-5 h-5 rounded-full border-2 border-white/50" />
-                  <span className="w-8 h-8 rounded-full bg-blue-600 text-white grid place-items-center text-lg leading-none">+</span>
-                  <span className="w-5 h-5 rounded border-2 border-white/50" />
-                  <span className="w-5 h-5 rounded-full border-2 border-white/50" />
-                </div>
-              </div>
+          <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-2">
+            <span className="text-[11px] text-white/30">Auto-splits at 500 characters</span>
+            
+            <div className="flex items-center gap-3">
+              <span className={`text-xs font-medium tabular-nums ${text.length > 480 ? 'text-amber-300' : 'text-white/40'}`}>
+                {text.length}/500
+              </span>
+              
+              {/* Instant Publish Button */}
+              <button
+                onClick={() => handlePublishOrSchedule(true)}
+                disabled={isSubmitting}
+                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Send className="h-3 w-3" />
+                <span>Publish</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Schedule Options */}
+        <div className="mb-6">
+          <div className="flex items-center gap-1.5 text-xs text-white/50 mb-3 font-medium">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Schedule for later</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { label: 'Tomorrow 9AM', icon: Calendar },
+              { label: 'Today 6PM', icon: Zap },
+            ].map((preset) => (
+              <button
+                key={preset.label}
+                onClick={() => handlePreset(preset.label)}
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-medium transition-all ${
+                  presetLabel === preset.label
+                    ? 'bg-purple-600 text-white border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]'
+                    : 'bg-white/[0.04] text-white/70 border-white/10 hover:bg-white/[0.08]'
+                }`}
+              >
+                <preset.icon className="h-3.5 w-3.5" />
+                {preset.label}
+              </button>
+            ))}
+
+            {/* Native Date Picker Backup */}
+            <div className="relative">
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => {
+                  setScheduledAt(e.target.value);
+                  setPresetLabel(null);
+                }}
+                className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white color-scheme-dark outline-none focus:border-purple-500/50"
+              />
             </div>
           </div>
         </div>
 
-        <div className="h-16" />
+        {/* Scheduled Threads Queue Card */}
+        <section className="mb-8 rounded-[20px] border border-white/10 bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Scheduled threads</h3>
+            <span className="rounded-full bg-purple-500/20 px-2.5 py-0.5 text-[10px] font-medium text-purple-300 border border-purple-500/30">
+              1 upcoming
+            </span>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500" />
+            <div className="pl-2">
+              <div className="text-xs font-semibold text-white/90">
+                Tomorrow at 9:00 AM • Launching PostThreader...
+              </div>
+              <div className="flex items-center justify-between mt-2 text-[11px] text-white/40">
+                <span>Draft ready • 1 thread will be posted</span>
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-amber-300 border border-amber-500/20 text-[10px]">
+                  Scheduled
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Branded Bottom Schedule CTA Button */}
+        <button
+          onClick={() => handlePublishOrSchedule(false)}
+          disabled={isSubmitting}
+          className="w-full relative group h-12 rounded-2xl bg-[linear-gradient(135deg,#9333ea,#4f46e5)] text-white font-semibold text-sm shadow-[0_0_25px_rgba(168,85,247,0.3)] hover:shadow-[0_0_35px_rgba(168,85,247,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isSubmitting ? (
+            'Processing...'
+          ) : (
+            <>
+              <span>{scheduledAt ? `Schedule for ${new Date(scheduledAt).toLocaleString()}` : 'Schedule Thread'}</span>
+              <Calendar className="h-4 w-4" />
+            </>
+          )}
+        </button>
+
       </div>
+
+      {/* Floating Bottom Mobile Navigation Bar */}
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-full border border-white/15 bg-[#0a0a0c]/80 backdrop-blur-2xl px-4 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex items-center gap-2">
+        {[
+          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+          { id: 'scheduled', label: 'Scheduled', icon: CalendarDays },
+          { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40'
+                  : 'text-white/50 hover:text-white'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
     </div>
-  )
+  );
 }
