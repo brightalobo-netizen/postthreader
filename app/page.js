@@ -7,9 +7,6 @@ import {
   Clock, 
   Zap, 
   Send, 
-  LayoutDashboard, 
-  CalendarDays, 
-  BarChart2,
   CheckCircle2,
   AlertCircle,
   LogIn
@@ -20,7 +17,6 @@ export default function DashboardPage() {
   const [token, setToken] = useState('');
   const [text, setText] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [presetLabel, setPresetLabel] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +25,6 @@ export default function DashboardPage() {
   useEffect(() => {
     setMounted(true);
 
-    // 1. Check URL for incoming token or auth code from OAuth callback
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token') || params.get('access_token');
     if (urlToken) {
@@ -40,7 +35,6 @@ export default function DashboardPage() {
       return;
     }
 
-    // 2. Check localStorage for existing tokens
     const storedToken = localStorage.getItem('threads_token') || localStorage.getItem('pt_token');
     if (storedToken) {
       setToken(storedToken);
@@ -48,7 +42,6 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Quick Preset Selector
   const handlePreset = (label) => {
     setPresetLabel(label);
     const now = new Date();
@@ -80,20 +73,23 @@ export default function DashboardPage() {
     setIsSubmitting(true);
     setStatusMessage(null);
 
+    // Grab latest token right before execution
+    const activeToken = localStorage.getItem('threads_token') || localStorage.getItem('pt_token') || token;
+
     try {
       const res = await fetch('/api/threads/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          token,
+          token: activeToken,
           scheduledAt: targetSchedule,
         }),
       });
 
       const data = await res.json();
 
-      if (data.id || data.success) {
+      if (res.ok && (data.id || data.success)) {
         const isScheduled = Boolean(targetSchedule);
         setStatusMessage({
           type: 'success',
@@ -105,10 +101,18 @@ export default function DashboardPage() {
         setScheduledAt('');
         setPresetLabel(null);
       } else {
-        setStatusMessage({
-          type: 'error',
-          text: data.error || 'Unable to post to Threads. Please verify your connection.',
-        });
+        // If token expired, prompt reconnection
+        if (res.status === 400 || res.status === 401) {
+          setStatusMessage({
+            type: 'error',
+            text: 'Threads token expired or invalid. Please disconnect and reconnect your account.',
+          });
+        } else {
+          setStatusMessage({
+            type: 'error',
+            text: data.error || data.message || 'Unable to post to Threads. Please verify your connection.',
+          });
+        }
       }
     } catch (err) {
       setStatusMessage({ type: 'error', text: 'Network error. Please try again.' });
@@ -130,7 +134,6 @@ export default function DashboardPage() {
 
   if (!mounted) return null;
 
-  // --- UNAUTHENTICATED VIEW (Login Screen) ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#070708] text-white antialiased flex items-center justify-center p-4 selection:bg-purple-500/30">
@@ -155,18 +158,13 @@ export default function DashboardPage() {
             <LogIn className="h-4 w-4" />
             <span>Connect with Threads</span>
           </button>
-
-          <p className="text-[11px] text-white/30 mt-6">
-            Requires authorized Meta Threads developer permissions.
-          </p>
         </div>
       </div>
     );
   }
 
-  // --- AUTHENTICATED VIEW (Main Dashboard) ---
   return (
-    <div className="min-h-screen bg-[#070708] text-white antialiased relative overflow-hidden pb-24 font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen bg-[#070708] text-white antialiased relative overflow-hidden pb-16 font-sans selection:bg-purple-500/30">
       
       {/* Soft Ambient Background Glows */}
       <div className="pointer-events-none absolute inset-0">
@@ -208,7 +206,7 @@ export default function DashboardPage() {
           <p className="text-sm text-white/50 mt-0.5">Welcome back, 5thpope — ready to post?</p>
         </div>
 
-        {/* In-App Status Message Banner */}
+        {/* Status Message Banner */}
         {statusMessage && (
           <div className={`mb-5 flex items-center gap-2.5 rounded-xl p-3.5 text-xs font-medium border backdrop-blur-md transition-all ${
             statusMessage.type === 'success'
@@ -220,7 +218,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Main Composer Glass Card with Instant Publish Button */}
+        {/* Main Composer Glass Card */}
         <section className="relative rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-5 sm:p-6 mb-6">
           <textarea
             value={text}
@@ -237,7 +235,6 @@ export default function DashboardPage() {
                 {text.length}/500
               </span>
               
-              {/* Instant Publish Button */}
               <button
                 onClick={() => handlePublishOrSchedule(true)}
                 disabled={isSubmitting}
@@ -276,7 +273,6 @@ export default function DashboardPage() {
               </button>
             ))}
 
-            {/* Native Date Picker Backup */}
             <div className="relative">
               <input
                 type="datetime-local"
@@ -316,7 +312,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Branded Bottom Schedule CTA Button */}
+        {/* Branded Schedule CTA Button */}
         <button
           onClick={() => handlePublishOrSchedule(false)}
           disabled={isSubmitting}
@@ -333,33 +329,6 @@ export default function DashboardPage() {
         </button>
 
       </div>
-
-      {/* Floating Bottom Mobile Navigation Bar */}
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-full border border-white/15 bg-[#0a0a0c]/80 backdrop-blur-2xl px-4 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex items-center gap-2">
-        {[
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'scheduled', label: 'Scheduled', icon: CalendarDays },
-          { id: 'analytics', label: 'Analytics', icon: BarChart2 },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-                isActive
-                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40'
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-
     </div>
   );
 }
