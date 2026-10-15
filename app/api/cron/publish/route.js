@@ -3,27 +3,38 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export async function GET(req) {
   try {
     const nowIso = new Date().toISOString();
+    console.log('Cron running at UTC:', nowIso);
 
-    // Fetch all pending scheduled threads where scheduled_at <= now
-    const { data: duePosts, error: fetchError } = await supabase
+    // Fetch all pending scheduled threads
+    const { data: allPending, error: fetchError } = await supabase
       .from('scheduled_threads')
       .select('*')
-      .eq('status', 'pending')
-      .lte('scheduled_at', nowIso);
+      .eq('status', 'pending');
 
     if (fetchError) {
       console.error('Cron fetch error:', fetchError);
-      return NextResponse.json({ error: 'Failed to fetch due posts' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch pending posts', details: fetchError.message }, { status: 500 });
     }
+
+    console.log('All pending posts found:', allPending);
+
+    // Filter manually in JavaScript to be 100% sure about time comparison
+    const nowTime = new Date().getTime();
+    const duePosts = (allPending || []).filter(post => {
+      const postTime = new Date(post.scheduled_at).getTime();
+      return postTime <= nowTime;
+    });
+
+    console.log('Due posts to publish:', duePosts.length);
 
     const results = [];
 
-    for (const post of (duePosts || [])) {
+    for (const post of duePosts) {
       try {
         const userId = post.user_id || 'me';
 
@@ -75,9 +86,9 @@ export async function GET(req) {
       }
     }
 
-    return NextResponse.json({ success: true, processed: results.length, results });
+    return NextResponse.json({ success: true, processed: results.length, totalPending: allPending?.length || 0, results });
   } catch (err) {
     console.error('Cron error:', err);
-    return NextResponse.json({ error: 'Cron execution failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Cron execution failed', details: err.message }, { status: 500 });
   }
 }
