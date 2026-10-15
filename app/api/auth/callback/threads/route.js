@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
+
 export async function GET(req) {
   const code = req.nextUrl.searchParams.get('code')
   if(!code) return NextResponse.redirect(process.env.NEXT_PUBLIC_SITE_URL || 'https://postthreader.vercel.app')
@@ -23,9 +24,10 @@ export async function GET(req) {
       try{
         localStorage.setItem('pt_user', JSON.stringify({access_token:'${token}', username:'threads_user', token:'${token}'}));
         localStorage.setItem('pt_token','${token}');
+        localStorage.setItem('threads_token','${token}');
       }catch(e){}
-      window.location='/'
-    </script>Connecting...</body></html>`
+      window.location='/dashboard'
+    </script>Connecting to Dashboard...</body></html>`
     return new NextResponse(html, {headers:{'Content-Type':'text/html'}})
   }catch(e){
     return NextResponse.redirect((process.env.NEXT_PUBLIC_SITE_URL || 'https://postthreader.vercel.app') + '?error=oauth_failed')
