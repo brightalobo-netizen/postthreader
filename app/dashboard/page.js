@@ -73,17 +73,18 @@ export default function DashboardPage() {
       return;
     }
 
-    const targetSchedule = forceImmediate ? new Date().toISOString() : scheduledAt;
+    const targetSchedule = forceImmediate ? new Date().toISOString() : (scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString());
 
-    if (!forceImmediate && !targetSchedule) {
-      setStatusMessage({ type: 'error', text: 'Please select a date and time to schedule, or click Publish above.' });
+    const activeUserId = localStorage.getItem('threads_user_id') || userId || '5thpope';
+    const activeToken = localStorage.getItem('threads_token') || localStorage.getItem('pt_token') || token;
+
+    if (!activeToken) {
+      setStatusMessage({ type: 'error', text: 'No active session token found. Please reconnect your account.' });
       return;
     }
 
     setIsSubmitting(true);
     setStatusMessage(null);
-
-    const activeUserId = localStorage.getItem('threads_user_id') || userId || '5thpope';
 
     try {
       const res = await fetch('/api/threads/publish', {
@@ -94,17 +95,18 @@ export default function DashboardPage() {
           title: text.slice(0, 50),
           posts: [text],
           scheduled_at: targetSchedule,
+          token: activeToken,
         }),
       });
 
       const data = await res.json();
 
-      if (res.ok && data.id) {
+      if (res.ok && (data.id || data.success)) {
         const isScheduled = !forceImmediate;
         setStatusMessage({
           type: 'success',
           text: isScheduled
-            ? `Thread scheduled for ${new Date(targetSchedule).toLocaleString()}!`
+            ? `Thread scheduled successfully!`
             : 'Your thread has been published successfully!',
         });
         setText('');
@@ -157,7 +159,7 @@ export default function DashboardPage() {
 
           <button
             onClick={handleLoginRedirect}
-            className="w-full h-12 rounded-2xl bg-white text-black font-semibold text-sm shadow-[0_0_25px_rgba(255,255,255,0.3)] hover:shadow-[0_0_35px_rgba(255,255,255,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
+            className="w-full h-12 rounded-2xl bg-white text-black font-semibold text-sm shadow-[0_0_25px_rgba(255,255,255,0.3)] hover:shadow-[0_0_35px_rgba(255,255,255,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <LogIn className="h-4 w-4" />
             <span>Connect with Threads</span>
@@ -196,7 +198,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={handleLogout}
-              className="text-[11px] font-medium text-white/50 hover:text-white transition-colors bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg"
+              className="text-[11px] font-medium text-white/50 hover:text-white transition-colors bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg cursor-pointer"
             >
               Disconnect
             </button>
@@ -241,7 +243,7 @@ export default function DashboardPage() {
               <button
                 onClick={() => handlePublishOrSchedule(true)}
                 disabled={isSubmitting}
-                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <Send className="h-3 w-3" />
                 <span>Publish</span>
@@ -265,7 +267,7 @@ export default function DashboardPage() {
               <button
                 key={preset.label}
                 onClick={() => handlePreset(preset.label)}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
                   presetLabel === preset.label
                     ? 'bg-purple-600 text-white border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]'
                     : 'bg-white/[0.04] text-white/70 border-white/10 hover:bg-white/[0.08]'
@@ -284,42 +286,17 @@ export default function DashboardPage() {
                   setScheduledAt(e.target.value);
                   setPresetLabel(null);
                 }}
-                className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white color-scheme-dark outline-none focus:border-purple-500/50"
+                className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white color-scheme-dark outline-none focus:border-purple-500/50 cursor-pointer"
               />
             </div>
           </div>
         </div>
 
-        {/* Scheduled Threads Queue Card */}
-        <section className="mb-8 rounded-[20px] border border-white/10 bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-white">Scheduled threads</h3>
-            <span className="rounded-full bg-purple-500/20 px-2.5 py-0.5 text-[10px] font-medium text-purple-300 border border-purple-500/30">
-              1 upcoming
-            </span>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500" />
-            <div className="pl-2">
-              <div className="text-xs font-semibold text-white/90">
-                Tomorrow at 9:00 AM • Launching PostThreader...
-              </div>
-              <div className="flex items-center justify-between mt-2 text-[11px] text-white/40">
-                <span>Draft ready • 1 thread will be posted</span>
-                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-amber-300 border border-amber-500/20 text-[10px]">
-                  Scheduled
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Schedule CTA Button */}
         <button
           onClick={() => handlePublishOrSchedule(false)}
           disabled={isSubmitting}
-          className="w-full relative group h-12 rounded-2xl bg-[linear-gradient(135deg,#9333ea,#4f46e5)] text-white font-semibold text-sm shadow-[0_0_25px_rgba(168,85,247,0.3)] hover:shadow-[0_0_35px_rgba(168,85,247,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full relative group h-12 rounded-2xl bg-[linear-gradient(135deg,#9333ea,#4f46e5)] text-white font-semibold text-sm shadow-[0_0_25px_rgba(168,85,247,0.3)] hover:shadow-[0_0_35px_rgba(168,85,247,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting ? (
             'Processing...'
