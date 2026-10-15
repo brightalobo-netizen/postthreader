@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export async function POST(req) {
   try {
@@ -21,8 +21,11 @@ export async function POST(req) {
     const targetDate = scheduled_at ? new Date(scheduled_at) : new Date();
     const isFuture = targetDate > new Date();
 
-    // If scheduled for the future, save to Supabase queue
     if (isFuture) {
+      if (!supabaseUrl || !supabaseKey) {
+        return NextResponse.json({ error: 'Supabase environment variables (URL/Key) are missing in Vercel.' }, { status: 500 });
+      }
+
       const { error } = await supabase
         .from('scheduled_threads')
         .insert([
@@ -36,8 +39,8 @@ export async function POST(req) {
         ]);
 
       if (error) {
-        console.error('Supabase insert error:', error);
-        return NextResponse.json({ error: 'Failed to save scheduled post to database.' }, { status: 500 });
+        console.error('Supabase insert error details:', error);
+        return NextResponse.json({ error: `Supabase DB Error: ${error.message}` }, { status: 500 });
       }
 
       return NextResponse.json({ 
@@ -47,7 +50,7 @@ export async function POST(req) {
       });
     }
 
-    // Otherwise, publish immediately to Meta Threads API (Step 1 & Step 2)
+    // Immediate publication flow
     const containerRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,7 +87,7 @@ export async function POST(req) {
     });
 
   } catch (err) {
-    console.error('Publish error:', err);
+    console.error('Publish route error:', err);
     return NextResponse.json({ error: 'Internal server error while processing post' }, { status: 500 });
   }
 }
